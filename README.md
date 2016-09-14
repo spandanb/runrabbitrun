@@ -17,7 +17,7 @@ Files
 * +-- data (various data files)
 * |   
 * +-- _misc 
-* |   +-- genwalk.py - generate walking data
-* |   +-- socgraph.py - experimenting with social graph data
+* |... +-- genwalk.py - generate walking data
+* |... +-- socgraph.py - experimenting with social graph data
 
 
