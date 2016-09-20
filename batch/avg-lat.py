@@ -2,6 +2,8 @@ from pyspark import SparkConf, SparkContext
 import os
 from snakebite.client import Client as sbclient
 
+"This module calculates the average latitude"
+
 def get_file():
     """
     Connects to HDFS and returns a .plt file
@@ -47,4 +49,4 @@ def avg_lat():
     print "Avg is {}".format(total/float(count))
 
 if __name__ == "__main__":
-    geodata()
+    avg_lat()
