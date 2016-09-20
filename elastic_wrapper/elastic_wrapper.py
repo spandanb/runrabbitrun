@@ -1,20 +1,13 @@
 from elasticsearch import Elasticsearch, helpers as eshelpers
-import pdb, json
-import uuid
+import pdb
+from utils.utils import get_id, pprint
 #See: https://elasticsearch-py.readthedocs.io/en/master/api.html
 
 
-#UTILITY FUNCTIONS
-def get_id():
-    return uuid.uuid4().hex
-
-def pprint(obj):
-    print json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
-
 class ElasticWrapper():
-    def __init__(self):
-        self.index = "geodata"
-        self.type = "point"
+    def __init__(self, index="geodata", type="point"):
+        self.index = index
+        self.type = type
         self.es = Elasticsearch(
             [{'host':'localhost'}] 
         )
@@ -71,6 +64,26 @@ class ElasticWrapper():
     
         docs = map(add_meta_fields, docs)
         return eshelpers.bulk(self.es, docs)
+
+        
+    def create_document_multi_id(self, docs):
+        """
+        Bulk indexes multiple documents. 
+        docs is a list of document objects.
+        Creates a ascending index
+        """
+        prefix = get_id()[:10]
+
+        def add_meta_fields(doc, i):
+            return {
+                "_index": self.index,
+                "_type":  self.type,
+                "_id"  : "{}-{}".format(prefix, str(i).zfill(6)),
+                "_source": doc
+            }
+    
+        docs = [add_meta_fields(doc, i) for i, doc in enumerate(docs)]
+        return eshelpers.bulk(self.es, docs)
     
     def search_document(self, query):
         return self.es.search(index=self.index, doc_type=self.type, body=query)
@@ -92,7 +105,7 @@ if __name__ == "__main__":
         "path_id": "e23x"
     }
 
-    print ew.create_document(doc0)
+    #print ew.create_document(doc0)
 
     dist_query = {
       "query": {
@@ -114,7 +127,7 @@ if __name__ == "__main__":
 
     #print search_document(es, dist_query)
 
-    #pprint(ew.get_mapping())
+    pprint(ew.get_mapping())
 
     #pprint(get_all(es))
 

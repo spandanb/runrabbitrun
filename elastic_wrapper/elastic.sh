@@ -4,7 +4,11 @@
 
 ARG=$1
 
-if [ $ARG -eq "1" ]; then
+if [ $ARG -eq "0" ]; then
+#Hello
+curl 'localhost:9200'
+
+elif [ $ARG -eq "1" ]; then
 #List all indices
 curl 'localhost:9200/_cat/indices?v'
 
