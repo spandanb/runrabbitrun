@@ -100,7 +100,7 @@ def to_elastic(ew, spark, filepath):
                .filter(lambda arr: arr[0] >= -90.0 and arr[0] <= 90.0 and arr[1] >= -180.00 and arr[1] <= 180.00)\
                .zipWithIndex()
 
-    #The shifted rdd
+    #The shifted rdd, i.e drops index 0
     shifted = rdd.filter(lambda item_idx_pair: item_idx_pair[1] != 0 )\
                  .map(lambda item_idx_pair: item_idx_pair[0])
     
@@ -147,8 +147,8 @@ def main():
 
     #Create a config object
     conf = (SparkConf()
-             .setMaster("local")
-             .setAppName("My app")
+             .setMaster(public_dns)
+             .setAppName(__file__)
              .set("spark.executor.memory", "5g"))
     
     #Get spark context
@@ -158,7 +158,8 @@ def main():
     for user in get_users(hdfs):
         #iterate over trajectories of this user
         for trajectory in get_trajectories(hdfs, user['path'] + "/Trajectory"):
-            to_elastic(ew, sc, trajectory['path'])
+            pass
+            #to_elastic(ew, sc, trajectory['path'])
 
 def reset_elastic():
     """

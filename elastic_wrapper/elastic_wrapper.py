@@ -1,15 +1,17 @@
 from elasticsearch import Elasticsearch, helpers as eshelpers
 import pdb
+import os
 from utils.utils import get_id, pprint
 #See: https://elasticsearch-py.readthedocs.io/en/master/api.html
 
 
 class ElasticWrapper():
     def __init__(self, index="geodata", type="point"):
+        public_dns = os.environ['PUBLIC_DNS']
         self.index = index
         self.type = type
         self.es = Elasticsearch(
-            [{'host':'localhost'}] 
+            [{'host': public_dns}] 
         )
     
     def list_indices(self):
