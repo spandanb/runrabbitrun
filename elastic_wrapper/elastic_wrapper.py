@@ -107,7 +107,11 @@ if __name__ == "__main__":
         "path_id": "e23x"
     }
 
+    ##Create a single document
     #print ew.create_document(doc0)
+
+    ##Create multiple documents
+    #ew.create_document_multi([doc0])
 
     dist_query = {
       "query": {
@@ -125,13 +129,12 @@ if __name__ == "__main__":
       }
     }
 
-    #create_document_multi(es, [doc0, doc1])
 
-    #print search_document(es, dist_query)
+    #print ew.search_document(dist_query)
 
-    pprint(ew.get_mapping())
+    #pprint(ew.get_mapping())
 
-    #pprint(get_all(es))
+    #pprint(ew.get_all())
 
 #    print ew.delete_index()
 #    print ew.create_geo_index()
