@@ -6,6 +6,8 @@ import os, pdb, time, json, math
 from snakebite.client import Client as sbclient
 from dateutil import parser as dateparser
 from elastic_wrapper.elastic_wrapper import ElasticWrapper
+from myutils.utils import get_users, get_trajectories
+
 
 """
 This module processes the trajectories, 
@@ -13,25 +15,6 @@ namely computes speed between two points
 and writes the entire tuple to elastic.
 """
 
-def get_users(hdfs):
-    """
-    Iterates over the users, i.e. the directory 
-    object corresponding to each user
-    """
-    users = hdfs.ls(['/Geolife_Trajectories/Data/'])
-    #TODO: iterate over all users
-    for i,u in enumerate(users):
-        if i == 5: break
-        yield u
-
-def get_trajectories(hdfs, usrpath):
-    """
-    Iterates over each file in the path; path should be a dir
-    """
-    trajectories = hdfs.ls([usrpath])
-    for t in trajectories:
-        yield t
-    
 def process_pairwise(row):
     """
     Processes geo points from the juxtaposed RDD and returns 
@@ -62,7 +45,7 @@ def process_pairwise(row):
     #TODO: Not sure if it makes sense to set speed to 0 if dt = 0
     try:
         #The speed in (km/h)
-        speed = d/tdiff/3600.0
+        speed = 3600 * d/tdiff
         #The gradient (m/s)
         gradient = ((p1[3] - p0[3]) * 0.3048)/tdiff 
     except ZeroDivisionError:
@@ -157,9 +140,8 @@ def main():
     #iterate over all trajectory files and write to elastic
     for user in get_users(hdfs):
         #iterate over trajectories of this user
-        for trajectory in get_trajectories(hdfs, user['path'] + "/Trajectory"):
-            pass
-            #to_elastic(ew, sc, trajectory['path'])
+        for trajectory in get_trajectories(hdfs, user):
+            to_elastic(ew, sc, trajectory['path'])
 
 def reset_elastic():
     """
