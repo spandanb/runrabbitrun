@@ -2,7 +2,7 @@
 Takes a current position query 
 """
 from elastic_wrapper.elastic_wrapper import ElasticWrapper
-from utils.utils import pprint
+from myutils.utils import pprint
 import pdb
 import dateutil.parser as dateparser
 import math
@@ -74,7 +74,12 @@ def distance(lat1, lon1, lat2, lon2):
     return d
 
 def compare_users(ew, user_points):
-    #get_nearby(ew)
+    """
+    Takes the user's trajectory and returns a list of other_path objects
+    Arguments:- 
+        ew: elastic_wrapper obj
+        user_points:- [(lat, lon, time)]
+    """
 
     #The computed values (will have be missing the tail element since speed is pairwise)
     user_path = []
@@ -83,26 +88,31 @@ def compare_users(ew, user_points):
         nextpoint = user_points[i+1]
         dist = distance(point[0], point[1], nextpoint[0], nextpoint[1])
         tdiff = (dateparser.parse(nextpoint[2]) - dateparser.parse(point[2])).total_seconds()
-        speed = dist/tdiff/3600.0
+        speed = 3600 * dist/tdiff
         user_path.append((point[0], point[1], point[2], speed))
     
     #The other paths are based on the last point
-    other_paths = get_nearby(ew, user_path[-1][0], user_path[-1][1])
+    nearby_paths = get_nearby(ew, user_path[-1][0], user_path[-1][1])
 
-    other_users = {}
-    for path_id, path in other_paths.items():
+    other_paths = []
+    for path_id, path in nearby_paths.items():
         #Find the ref_point in path
         for i, point in enumerate(path['other_points']):
             #ref_point found in path  
             if point["_id"] == path['ref_point']["_id"]:
-                #TODO: the following may not always be valid, i.e. when the historical data is at a start
-                res = path['other_points'][i-len(user_path)+1:i+1]
-                print "path_id={}, user_id={}".format(res[0]["_source"]['path_id'], res[0]["_source"]['user_id'] )
-                print "your  speed= {}".format([u[3] for u in user_path])
-                print "their speed= {}".format([r['_source']['speed'] for r in res])
+                #TODO: the following may not always be valid, e.g. when the ref point is at a start
+                prevpoints = path['other_points'][i-len(user_path)+1:i+1]
+
+                other_path = {'path_id': prevpoints[0]["_source"]['path_id'], 
+                              'user_id': prevpoints[0]["_source"]['user_id'],
+                              'user_speed': [u[3] for u in user_path], 
+                              'their_speed': [p['_source']['speed'] for p in prevpoints]}
                 
+                other_paths.append(other_path)
 
-
+    #Do something with this now
+    return other_paths
+                
 def simpath_test(ew):
     """
     Tests a similar path, taken from 000, 20081023025304, 0:2
@@ -111,7 +121,7 @@ def simpath_test(ew):
               (39.984683,116.31845,"02:53:12"), 
               (39.984686,116.318417,"02:53:17")]
 
-    compare_users(ew, points)
+    pprint(compare_users(ew, points))
 
 def combpath_test():
     """
