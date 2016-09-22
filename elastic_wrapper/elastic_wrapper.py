@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch, helpers as eshelpers
 import pdb
 import os
-from utils.utils import get_id, pprint
+from myutils.utils import get_id, pprint
 #See: https://elasticsearch-py.readthedocs.io/en/master/api.html
 
 
