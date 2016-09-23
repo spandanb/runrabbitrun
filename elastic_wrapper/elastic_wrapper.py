@@ -47,10 +47,20 @@ class ElasticWrapper():
         return self.es.indices.delete(index=[self.index])
     
     def create_document(self, doc):
-        identifier = get_id()
-        print identifier
-        return self.es.create(index=self.index, doc_type=self.type, body=doc, id=identifier)
+        return self.es.create(index=self.index, doc_type=self.type, body=doc, id=get_id())
     
+    def create_document_id(self, doc):
+        identifier = "{}-{}".format(get_id()[:10], doc["offset"].zfill(6))
+        doc = {
+            "location" : doc["location"],
+            "speed"    : doc["speed"],
+            "gradient" : doc["gradient"],
+            "user_id"  : doc["user_id"],
+            "path_id"  : doc["path_id"]
+         }
+
+        return self.es.create(index=self.index, doc_type=self.type, body=doc, id=identifier)
+
     def create_document_multi(self, docs):
         """
         Bulk indexes multiple documents. 
@@ -72,19 +82,25 @@ class ElasticWrapper():
         """
         Bulk indexes multiple documents. 
         docs is a list of document objects.
-        Creates a ascending index
+        Creates an ascending index
         """
         prefix = get_id()[:10]
 
-        def add_meta_fields(doc, i):
+        def add_meta_fields(doc):
             return {
                 "_index": self.index,
                 "_type":  self.type,
-                "_id"  : "{}-{}".format(prefix, str(i).zfill(6)),
-                "_source": doc
+                "_id"  : "{}-{}".format(prefix, str(doc["offset"]).zfill(6)),
+                "_source": {
+                    "location" : doc["location"],
+                    "speed"    : doc["speed"],
+                    "gradient" : doc["gradient"],
+                    "user_id"  : doc["user_id"],
+                    "path_id"  : doc["path_id"]
+                }
             }
-    
-        docs = [add_meta_fields(doc, i) for i, doc in enumerate(docs)]
+   
+        docs = map(add_meta_fields, docs)
         return eshelpers.bulk(self.es, docs)
     
     def search_document(self, query):
@@ -118,10 +134,10 @@ if __name__ == "__main__":
         "filtered": {
           "filter": {
             "geo_distance": {
-              "distance": "400",
+              "distance": "100",
               "location": {
-                "lat":  40.715,
-                "lon": -73.988
+                "lat": 39.984346,
+                "lon": 116.302601
               }
             }
           }
@@ -129,8 +145,8 @@ if __name__ == "__main__":
       }
     }
 
-
-    #print ew.search_document(dist_query)
+    print ew.search_document(dist_query)
+    #pprint(ew.es.search(index=ew.index, doc_type=ew.type, q="path_id:20081023025304"))
 
     #pprint(ew.get_mapping())
 

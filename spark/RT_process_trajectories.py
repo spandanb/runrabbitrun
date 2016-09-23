@@ -8,8 +8,11 @@ from kafka.errors import KafkaError
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 import os, pdb, json
-from myutils.utils import compute_distance 
 import dateutil.parser as dateparser
+from myutils.utils import compute_distance 
+from feiface import feiface
+from elastic_wrapper.elastic_wrapper import ElasticWrapper
+
 
 #offsetRanges = []
 #
@@ -24,7 +27,7 @@ import dateutil.parser as dateparser
 #    for o in offsetRanges:
 #        print "%s %s %s %s" % (o.topic, o.partition, o.fromOffset, o.untilOffset)
 
-def _pairwise_compute(row):
+def _speed_gradient(row):
     p0, p1 = row
     dist = compute_distance(p0[0], p0[1], p1[0], p1[1])
     tdiff = dateparser(p1[5]) - dateparser(p0[5]).total_seconds()
@@ -33,6 +36,7 @@ def _pairwise_compute(row):
     #gradient m/s
     gradient = (p[1] - p[0])*0.3048/tdiff
 
+    #lat, lon, speed, gradient
     return (p0[0], p0[1], speed, gradient)
 
 def pairwise_compute(rdd):
@@ -47,12 +51,24 @@ def pairwise_compute(rdd):
               .map(lambda pair: pair[0])
     juxtaposed = head.zip(tail)
 
-    computed = juxtaposed.map(lambda row: _pairwise_compute(row))\
-                         .collect()
+    computed = juxtaposed.map(lambda row: _speed_gradient(row))
+    return computed
 
-    #Write this where you want
-    with open("/home/ubuntu/foo", "w") as fptr:
-        fptr.write(computed)
+#    #Write this where you want
+#    with open("/home/ubuntu/foo", "w") as fptr:
+#        fptr.write(computed.collect())
+
+def compare_results(rdd):
+    """
+
+    """
+    #elastic wrapper
+    ew = ElasticWrapper()
+    results = feiface.compare_paths(ew, rdd.collect())
+
+    print results
+
+
      
 def simple_consume():
     consumer = KafkaConsumer(os.environ['KAFKA_TOPIC'])
@@ -85,7 +101,9 @@ def consume():
     kafka_brokers = {"metadata.broker.list": os.environ["KAFKA_BROKERS"]}
 
     user_data = KafkaUtils.createDirectStream(stream, [os.environ['KAFKA_TOPIC']], kafka_brokers)
-    user_data.map(lambda line: json.loads(line[1])).foreachRDD(pairwise_compute)
+    user_data.map(lambda line: json.loads(line[1]))\
+             .transform(pairwise_compute)\
+             .foreachRDD(compare_results)
 
     stream.start()
     stream.awaitTermination()

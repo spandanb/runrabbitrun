@@ -1,11 +1,22 @@
-"""
-Takes a current position query 
-"""
 from elastic_wrapper.elastic_wrapper import ElasticWrapper
 from myutils.utils import pprint
 import pdb
 import dateutil.parser as dateparser
 import math
+
+def distance(lat1, lon1, lat2, lon2):
+    "Returns the distance in km"
+
+    radius = 6371 # km
+
+    dlat = math.radians(lat2-lat1)
+    dlon = math.radians(lon2-lon1)
+    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
+        * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = radius * c
+
+    return d
 
 def get_nearby(ew, lat, lon, dist=100):
     dist_query0 = {
@@ -37,7 +48,7 @@ def get_nearby(ew, lat, lon, dist=100):
           ]
     }
 
-    #This returns upto 20 results with 100m of the (lat, lon)
+    #This returns upto `size` results within `dist` of the (lat, lon), sorted by distance
     points = ew.es.search(index=ew.index, doc_type=ew.type, body=dist_query0, size=20)
 
     path_map = {}
@@ -61,27 +72,14 @@ def get_nearby(ew, lat, lon, dist=100):
     
     return path_map
 
-def distance(lat1, lon1, lat2, lon2):
-    radius = 6371 # km
-
-    dlat = math.radians(lat2-lat1)
-    dlon = math.radians(lon2-lon1)
-    a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) \
-        * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    d = radius * c
-
-    return d
-
-def compare_users(ew, user_points):
+def get_user_path(user_points):
     """
-    Takes the user's trajectory and returns a list of other_path objects
-    Arguments:- 
-        ew: elastic_wrapper obj
+    Takes the user_points and returns the user_path, i.e. with
+    the speed and gradient. 
+    Arguments:-
         user_points:- [(lat, lon, time)]
     """
-
-    #The computed values (will have be missing the tail element since speed is pairwise)
+    #The computed values (will have the tail element missing since speed is pairwise)
     user_path = []
     #the last element is not considered     
     for i, point in enumerate(user_points[:-1]):
@@ -90,6 +88,15 @@ def compare_users(ew, user_points):
         tdiff = (dateparser.parse(nextpoint[2]) - dateparser.parse(point[2])).total_seconds()
         speed = 3600 * dist/tdiff
         user_path.append((point[0], point[1], point[2], speed))
+    return user_path
+
+def compare_paths(ew, user_path):
+    """
+    Takes the user's trajectory and returns a list of other_path objects
+    Arguments:- 
+        ew: elastic_wrapper obj
+        user_path: computed path with speed, gradient
+    """
     
     #The other paths are based on the last point
     nearby_paths = get_nearby(ew, user_path[-1][0], user_path[-1][1])
@@ -100,8 +107,14 @@ def compare_users(ew, user_points):
         for i, point in enumerate(path['other_points']):
             #ref_point found in path  
             if point["_id"] == path['ref_point']["_id"]:
-                #TODO: the following may not always be valid, e.g. when the ref point is at a start
-                prevpoints = path['other_points'][i-len(user_path)+1:i+1]
+                sidx = i-len(user_path)+1
+                eidx = i
+                if sidx > eidx: 
+                    print "ERROR: Incongruent Paths: (feiface.py)"
+                    #FIX: This is going to give wonky results since we are trying to grab 
+                    #a subset of the array, larger than the array, e.g. the ref user started
+                    #after the active user. Perhaps, cut down the active user's path
+                prevpoints = path['other_points'][sidx:eidx+1]
 
                 other_path = {'path_id': prevpoints[0]["_source"]['path_id'], 
                               'user_id': prevpoints[0]["_source"]['user_id'],
@@ -121,7 +134,7 @@ def simpath_test(ew):
               (39.984683,116.31845,"02:53:12"), 
               (39.984686,116.318417,"02:53:17")]
 
-    pprint(compare_users(ew, points))
+    pprint(compare_paths(ew, get_user_path(points)))
 
 def combpath_test():
     """

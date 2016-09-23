@@ -22,9 +22,9 @@ def process_pairwise(row):
     Computes the pairwise speed and elevation change between p0, p1.
     p0, p1 are in PLT format.
     Arguments:
-        row:- a juxtaposed row, i.e. [p0, p1]
+        row:- a juxtaposed row, i.e. (idx, [p0, p1])
     """
-    p0, p1 = row
+    p0, p1 = row[1]
 
     #The time diff between p0, p1
     tdiff = (dateparser.parse((p1[6])) - dateparser.parse((p0[6]))).total_seconds() #seconds
@@ -52,8 +52,8 @@ def process_pairwise(row):
         speed = 0.0
         gradient = 0.0
 
-    return (p0[0], p0[1], speed, gradient)
-
+    #lat, lon, p0[7] is the index
+    return (p0[0], p0[1], speed, gradient, p0[7])
 
 def get_path_data(filepath):
     "Extracts path data from the filepath"
@@ -67,7 +67,7 @@ def to_elastic(ew, spark, filepath):
     Computes the speed and elevation and 
     writes the result to elastic
     """
-   
+
     public_dns = os.environ["PUBLIC_DNS"]
     user_id, path_id = get_path_data(filepath)
     filepath = "hdfs://{}:9000{}".format(public_dns, filepath)
@@ -83,24 +83,22 @@ def to_elastic(ew, spark, filepath):
                .filter(lambda arr: arr[0] >= -90.0 and arr[0] <= 90.0 and arr[1] >= -180.00 and arr[1] <= 180.00)\
                .zipWithIndex()
 
-    #The shifted rdd, i.e drops index 0
-    shifted = rdd.filter(lambda item_idx_pair: item_idx_pair[1] != 0 )\
-                 .map(lambda item_idx_pair: item_idx_pair[0])
-    
-    #With the tail element dropped
-    #TODO: seems like this would be very inefficient
-    tail = rdd.count() - 1 
-    original = rdd.filter(lambda item_idx_pair: item_idx_pair[1] != tail)\
-                  .map(lambda item_idx_pair: item_idx_pair[0])
+    #FIX: seems like this would be very inefficient
+    tailidx = rdd.count() - 1 
+    #Drop the tail element 
+    #append index into value array, and swap order of index and value
+    head = rdd.filter(lambda item_idx: item_idx[1] != tailidx)\
+                  .map(lambda item_idx: (item_idx[1], item_idx[0] + [item_idx[1]]) )\
 
-    #Contains the pair, (original, shifted)
-    juxtaposed = original.zip(shifted)
-    #TODO: This won't work if the dataset is too big
-    computed = juxtaposed.map(lambda row: process_pairwise(row))\
-                         .collect()
+    #drop head element
+    #decrement idx by 1 and reverse order of idx, and value
+    tail = rdd.filter(lambda item_idx: item_idx[1] != 0 )\
+                 .map(lambda item_idx: (item_idx[1]-1, item_idx[0]))\
+   
+    juxtaposed = head.join(tail)
 
-    #Map RDD row to object format required by elastic
-    computed = map(lambda row: {
+    computed = juxtaposed.map(process_pairwise)\
+                         .map(lambda row: {
                                  "location": {
                                     "lat": row[0],
                                     "lon": row[1]
@@ -108,14 +106,12 @@ def to_elastic(ew, spark, filepath):
                                  "speed": row[2],
                                  "gradient": row[3],
                                  "user_id": user_id,
-                                 "path_id": path_id
-                               }, computed)
-  
-    #Write these to elasticsearch
-#    print filepath
-#    print user_id, path_id
-    print ew.create_document_multi_id(computed)
+                                 "path_id": path_id,
+                                 "offset": row[4] })\
+                          .collect()       
+                         #.foreachPartition(ew.create_document_multi_id) #Doesn't work
 
+    print ew.create_document_multi_id(computed)
 
 
 def main():
@@ -130,12 +126,16 @@ def main():
 
     #Create a config object
     conf = (SparkConf()
-             .setMaster(public_dns)
+             .setMaster("spark://" + public_dns + ":7077")
              .setAppName(__file__)
              .set("spark.executor.memory", "5g"))
     
     #Get spark context
     sc = SparkContext(conf = conf)
+    #Quiet the log
+    logger = sc._jvm.org.apache.log4j
+    logger.LogManager.getLogger("org"). setLevel( logger.Level.ERROR )
+    logger.LogManager.getLogger("akka").setLevel( logger.Level.ERROR )
 
     #iterate over all trajectory files and write to elastic
     for user in get_users(hdfs):
