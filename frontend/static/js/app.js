@@ -14,8 +14,9 @@ $(function(){
     $("#submit-btn").click(function(e){
         var lat = $("#lat-input").val();
         var lon = $("#lon-input").val();
-        console.log(lat, lon);
-        send_coord(lat, lon);
+        //send_coord(lat, lon);
+       drop() 
     });
+
 
 })

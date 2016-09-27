@@ -20,7 +20,7 @@ class Application(tornado.web.Application):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render('index.html')
+        self.render('index.html', googlekey=os.environ["GKEY"])
 
 class UserInputHandler(tornado.web.RequestHandler):
     def post(self):

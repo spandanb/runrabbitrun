@@ -1,19 +1,75 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Walker</title>
+    <title>Run Rabbit Run</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url("css/style.css") }}" >
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" 
+     integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" 
+     crossorigin="anonymous">
+
   </head>
   <body>
-    <h1>Hey</h1>
+    <div class="container">
+    
+        <div class="row">
+            <h1 class="shadow-box">Run Rabbit Run</h1>
+        </div>
 
-    Latitude: <input id="lat-input" type="text" name="lat" ><br>
-    Longitude: <input id="lon-input" type="text" name="lon"><br>
-    <button id="submit-btn" type="button">Query</button>
+        <div class="row space-box">
+            <div class="col-lg-6">
+                <div class="input-group space-box">
+                    <span class="input-group-addon">Seed Latitude</span>
+                    <input id="seed-lat" type="text" class="form-control" value="37.4263597">
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="input-group space-box">
+                    <span class="input-group-addon">Seed Longitude</span>
+                    <input id="seed-lon" type="text" class="form-control" value="-122.1432371">
+                </div>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="input-group space-box">
+                <span class="input-group-addon">Latitude</span>
+                <input type="text" class="form-control" placeholder="Latitude" id="lat-vals">
+            </div>
+    
+            <div class="input-group space-box">
+                <span class="input-group-addon">Longitude</span>
+                <input type="text" class="form-control" placeholder="Longitude" id="lon-vals">
+            </div>
+    
+            <div class="space-box">
+                <button type="button" class="btn btn-primary" id="synth-data">Synthesize Data</button>
+                <button type="button" class="btn btn-success" id="run-query">Run Compare Query</button>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div id="map"></div>
+
+    <div id="my-container" class="shadow-box" style="height: 400px; min-width: 310px"></div>
+
 
     <script   src="https://code.jquery.com/jquery-3.1.0.min.js"
     integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="
     crossorigin="anonymous"></script>
 
-    <script src="{{ static_url("app.js") }}" type="text/javascript"></script>
+    <script src="{{ static_url("js/app.js") }}" type="text/javascript"></script>
+    <script src="{{ static_url("js/map.js") }}" type="text/javascript"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{googlekey}}&callback=initMap"
+     async defer></script>
+
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+    <script src="{{ static_url("js/chart.js") }}" type="text/javascript"></script>
 
   </body>
 </html>
