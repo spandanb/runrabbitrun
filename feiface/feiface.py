@@ -18,6 +18,39 @@ def distance(lat1, lon1, lat2, lon2):
 
     return d
 
+def nearby_points(ew, lat, lon, dist=10):
+    "Return the nearby points"
+    dist_query0 = {
+        "query": {
+            "filtered": {
+                "filter": {
+                    "geo_distance": {
+                        "distance": dist,
+                        "location": {
+                            "lat": lat,
+                            "lon": lon
+                        }
+                    }
+                }
+            }
+        },
+        "sort": [
+            {
+              "_geo_distance": {
+                "location": { 
+                  "lat": lat,  
+                  "lon": lon 
+                },
+                "order":         "asc",
+                "unit":          "m", 
+                "distance_type": "plane" 
+              }
+            }
+          ]
+    }
+    resp = ew.es.search(index=ew.index, doc_type=ew.type, body=dist_query0, size=10)
+    return resp
+
 def get_nearby(ew, lat, lon, dist=100):
     dist_query0 = {
         "query": {
@@ -49,20 +82,20 @@ def get_nearby(ew, lat, lon, dist=100):
     }
 
     #This returns upto `size` results within `dist` of the (lat, lon), sorted by distance
-    points = ew.es.search(index=ew.index, doc_type=ew.type, body=dist_query0, size=20)
+    nearby_points = ew.es.search(index=ew.index, doc_type=ew.type, body=dist_query0, size=10)
 
     path_map = {}
     #Gets all paths that are close by (contains dups)
-    for point in points['hits']['hits']:
+    for point in nearby_points['hits']['hits']:
         path_id = point['_source']['path_id']
         #If the point already exists, then new point is a worse match 
         #since points are sorted by distance from user
         if path_id not in path_map:
             query_string = 'path_id:"{}"'.format(path_id)
             #TODO: size = should only be as many elements as the number of user points
-            #sort by _doc:asc does what I expected _id:asc to do
+            #sort by _id, '_doc:asc' does what I expected '_id:asc' to do
             result = ew.es.search(index=ew.index, doc_type=ew.type, 
-                                  q=query_string, size=1000, sort="_doc:asc")
+                                  q=query_string, size=10, sort="_doc:asc")
             #ref_point (the point closest point), other_points (other points including ref_point)
             path_map[path_id] = {'ref_point': point, 'other_points': result['hits']['hits']}
 
@@ -97,7 +130,12 @@ def compare_paths(ew, user_path):
         ew: elastic_wrapper obj
         user_path: computed path with speed, gradient
     """
-    
+   
+    if not user_path: 
+        print "ERROR: user_path is empty"
+        print user_path
+        return []
+
     #The other paths are based on the last point
     nearby_paths = get_nearby(ew, user_path[-1][0], user_path[-1][1])
 
@@ -107,21 +145,24 @@ def compare_paths(ew, user_path):
         for i, point in enumerate(path['other_points']):
             #ref_point found in path  
             if point["_id"] == path['ref_point']["_id"]:
-                sidx = i-len(user_path)+1
-                eidx = i
-                if sidx > eidx: 
-                    print "ERROR: Incongruent Paths: (feiface.py)"
-                    #FIX: This is going to give wonky results since we are trying to grab 
-                    #a subset of the array, larger than the array, e.g. the ref user started
-                    #after the active user. Perhaps, cut down the active user's path
-                prevpoints = path['other_points'][sidx:eidx+1]
-
-                other_path = {'path_id': prevpoints[0]["_source"]['path_id'], 
-                              'user_id': prevpoints[0]["_source"]['user_id'],
-                              'user_speed': [u[3] for u in user_path], 
-                              'their_speed': [p['_source']['speed'] for p in prevpoints]}
+                other_paths.append(path['other_points'][:i+1])
                 
-                other_paths.append(other_path)
+#                sidx = i-len(user_path)+1
+#                eidx = i
+#                if sidx > eidx: 
+#                    print "ERROR: Incongruent Paths: (feiface.py)"
+#                    continue #TODO: instead truncate the other result
+#                    #FIX: This is going to give wonky results since we are trying to grab 
+#                    #a subset of the array, larger than the array, e.g. the ref user started
+#                    #after the active user. Perhaps, cut down the active user's path
+#                prevpoints = path['other_points'][sidx:eidx+1]
+#
+#                other_path = {'path_id': prevpoints[0]["_source"]['path_id'], 
+#                              'user_id': prevpoints[0]["_source"]['user_id'],
+#                              'user_speed': [u[3] for u in user_path], 
+#                              'their_speed': [p['_source']['speed'] for p in prevpoints]}
+#                
+#                other_paths.append(other_path)
 
     #Do something with this now
     return other_paths
@@ -134,17 +175,18 @@ def simpath_test(ew):
               (39.984683,116.31845,"02:53:12"), 
               (39.984686,116.318417,"02:53:17")]
 
-    pprint(compare_paths(ew, get_user_path(points)))
+    results = compare_paths(ew, get_user_path(points))
+    pdb.set_trace()
+    return results
 
-def combpath_test():
-    """
-    Tests a path is the result of a combined path
-    """
+def other_test(ew):
+    return get_nearby(ew, 39.984683, 116.31845)
 
 
 
 if __name__ == "__main__":
     ew = ElasticWrapper()
-    simpath_test(ew)
+    #pprint(simpath_test(ew))
+    pprint(other_test(ew))
 
     
