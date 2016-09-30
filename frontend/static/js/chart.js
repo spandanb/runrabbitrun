@@ -41,7 +41,7 @@ $(function () {
         },
 
         title: {
-            text: 'Live random data'
+            text: 'Your Relative Speed'
         },
 
         exporting: {
@@ -49,7 +49,39 @@ $(function () {
         },
 
         series: [{
-            name: 'Random data',
+            name: 'Your Speeds',
+            data: (function () {
+                // generate an array of random data
+                var data = [],
+                    time = (new Date()).getTime(),
+                    i;
+
+                for (i = -999; i <= 0; i += 1) {
+                    data.push([
+                        time + i * 1000,
+                        Math.round(Math.random() * 100)
+                    ]);
+                }
+                return data;
+            }())
+        },{
+            name: 'User1 Speed',
+            data: (function () {
+                // generate an array of random data
+                var data = [],
+                    time = (new Date()).getTime(),
+                    i;
+
+                for (i = -999; i <= 0; i += 1) {
+                    data.push([
+                        time + i * 1000,
+                        Math.round(Math.random() * 100)
+                    ]);
+                }
+                return data;
+            }())
+         },{
+            name: 'User2 Speed',
             data: (function () {
                 // generate an array of random data
                 var data = [],

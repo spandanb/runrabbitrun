@@ -1,7 +1,7 @@
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
-import os, json
+import os, json, sys
 
 
 class Application(tornado.web.Application):
@@ -28,10 +28,11 @@ class UserInputHandler(tornado.web.RequestHandler):
         body = json.loads(body)
         self.write("200") 
         
-def main():
+def main(port):
     http_server = tornado.httpserver.HTTPServer(Application())
-    http_server.listen(9009)
+    http_server.listen(port)
     tornado.ioloop.IOLoop.current().start()        
 
 if __name__ == "__main__":
-    main()
+    port = sys.argv[1]
+    main(port)
