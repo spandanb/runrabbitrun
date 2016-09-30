@@ -2,11 +2,14 @@ import json
 import uuid
 import math
 
-def get_id():
+def get_id(integer=False):
     """
     Returns a random 128 bit hex string 
     """
-    return uuid.uuid4().hex
+    if integer:
+        return uuid.uuid4().int
+    else:
+        return uuid.uuid4().hex
  
 def pprint(obj):
     """
@@ -47,3 +50,4 @@ def compute_distance(lat0, lon0, lat1, lon1):
         * math.cos(math.radians(lat1)) * math.sin(dlon/2) * math.sin(dlon/2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     d = R * c
+    return d
