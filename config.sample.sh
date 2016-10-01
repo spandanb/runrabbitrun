@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Public DNS of Spark used for Sparks
-export PUBLIC_DNS="ec2-52-32-170-79.us-west-2.compute.amazonaws.com"
+export PUBLIC_DNS="ec2-52-42-199-53.us-west-2.compute.amazonaws.com"
 #elastic nodes
 export ELASTIC_NODES="ec2-54-71-2-160.us-west-2.compute.amazonaws.com,ec2-52-39-68-18.us-west-2.compute.amazonaws.com,ec2-52-24-218-41.us-west-2.compute.amazonaws.com"
 #Kafka topic for writting raw data to

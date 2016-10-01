@@ -153,4 +153,4 @@ if __name__ == "__main__":
 #    print ew.delete_index()
 #    print ew.create_geo_index()
     
-    print ew.list_indices()
+    print ew.create_geo_index()
