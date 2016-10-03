@@ -78,7 +78,7 @@ def fetch_and_write(rdd):
     """
     Fetch the results and writes them to Kafka
     """
-    producer = KafkaProducer(bootstrap_servers="localhost:9092")
+    producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
 
     #elastic wrapper
     ew = ElasticWrapper()
@@ -140,18 +140,22 @@ def fetch_and_pipe(rdd):
             if subpath:
                 matching_paths.append(subpath)
         
-            #TODO: remove subset of path where distance > 10m
+        #TODO: remove subset of path where distance > 10m
         results = json.dumps(matching_paths)
         print("Results is {}".format(results))
-        producer = KafkaProducer(bootstrap_servers="localhost:9092")
+
+        producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
         producer.send(os.environ["KAFKA_TOPIC_RES"], results) 
 
 def simple_consume():
     #https://github.com/dpkp/kafka-python/issues/601
     topic = os.environ['KAFKA_TOPIC']
-    consumer = KafkaConsumer(topic, enable_auto_commit=False, group_id=None)
-    consumer.topics()
-    consumer.seek_to_beginning()
+    #Sets the offset to 0
+    #consumer = KafkaConsumer(topic, enable_auto_commit=False, group_id=None)
+    #consumer.topics()
+    #consumer.seek_to_beginning()
+    
+    consumer = KafkaConsumer(topic, bootstrap_servers=os.environ['KAFKA_BROKERS'])
 
     for msg in consumer:
         print (msg)
@@ -190,8 +194,7 @@ def main():
     #Create a config object
     conf = (SparkConf()
              .setMaster("spark://" + public_dns + ":7077")
-             .setAppName(__file__)
-             .set("spark.executor.memory", "2g"))
+             .setAppName(__file__))
     
     #Get spark context
     sc = SparkContext(conf = conf)
@@ -205,7 +208,7 @@ def main():
     #The batch size is 3 seconds
     stream = StreamingContext(sc, 3)
 
-    kafka_brokers = {"metadata.broker.list": os.environ["KAFKA_BROKERS"]}
+    kafka_brokers = {"metadata.broker.list": os.environ['KAFKA_BROKERS']}
 
     user_data = KafkaUtils.createDirectStream(stream, 
                                               [os.environ['KAFKA_TOPIC']], 
@@ -216,3 +219,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    #simple_consume()
