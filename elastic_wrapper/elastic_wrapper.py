@@ -7,13 +7,11 @@ from myutils.utils import get_id, pprint
 
 class ElasticWrapper():
     def __init__(self, index="geodata", type="point"):
-        public_dns = os.environ['PUBLIC_DNS']
+        enodes = os.environ['ELASTIC_NODES'].split(",")
         self.index = index
         self.type = type
-        self.es = Elasticsearch(
-            [{'host': public_dns}] 
-        )
-    
+        self.es = Elasticsearch(enodes)
+
     def list_indices(self):
         return self.es.indices.get_aliases().keys()
 
@@ -145,7 +143,7 @@ if __name__ == "__main__":
       }
     }
 
-    print ew.search_document(dist_query)
+    #print ew.search_document(dist_query)
     #pprint(ew.es.search(index=ew.index, doc_type=ew.type, q="path_id:20081023025304"))
 
     #pprint(ew.get_mapping())
@@ -155,3 +153,4 @@ if __name__ == "__main__":
 #    print ew.delete_index()
 #    print ew.create_geo_index()
     
+    print ew.create_geo_index()

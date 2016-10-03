@@ -33,7 +33,7 @@ def perturb(line):
 
     return [lat, lon, 0, float(arr[3]), arr[4], arr[5], arr[6]]
 
-def produce_untagged(hdfs):
+def produce_untagged(hdfs, print_sent=False):
     """
     Produces random user input values. 
     untagged ~ no user or path info on the points
@@ -46,24 +46,21 @@ def produce_untagged(hdfs):
         for trajectory in get_trajectories(hdfs, user):
             if cointoss(): continue
             
-            filepath = "hdfs://{}:9000{}".format(os.environ['PUBLIC_DNS'], trajectory['path'])
-            filepath = trajectory['path']
-
-            cat = subprocess.Popen(["hadoop", "fs", "-cat", filepath], stdout=subprocess.PIPE)
-            for lineno, line in enumerate(cat.stdout):
-                if lineno > 6 and cointoss():
+            lines = next(hdfs.text([trajectory['path']]))
+            for lineno, line in enumerate(lines.split('\n')):
+                if lineno > 6 and cointoss() and line:
                     res = json.dumps(perturb(line))
-                    #print res
+                    if print_sent: print res
                     producer.send(os.environ['KAFKA_TOPIC'], res)
 
-def dtime():
+def _dtime():
     """
     Returns a string of current datetime
     """
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
-def produce_tagged(hdfs, channel=None, continuous=True):
+def produce_tagged(hdfs, channel=None, continuous=True, print_sent=True):
     """
     Produces trajectory values for a single user, tagged with path_id and user_id 
     Arguments:
@@ -80,25 +77,20 @@ def produce_tagged(hdfs, channel=None, continuous=True):
             for trajectory in get_trajectories(hdfs, user):
                 if cointoss(odds=0.5): continue
                 
-                filepath = "hdfs://{}:9000{}".format(os.environ['PUBLIC_DNS'], trajectory['path'])
-                filepath = trajectory['path']
-    
-                cat = subprocess.Popen(["hadoop", "fs", "-cat", filepath], stdout=subprocess.PIPE)
                 offset = 0
                 user_id = get_id()
                 path_id = get_id()
-                channel.put({"user_id": user_id, "path_id": path_id})
-                for lineno, line in enumerate(cat.stdout):
-                    if lineno > 6 and cointoss():
-                        data = perturb(line) + [ offset, user_id, path_id, dtime()]
+                
+                #hdfs.text returns a generator [lines_foreach_file]
+                lines = next(hdfs.text([trajectory['path']]))
+                for lineno, line in enumerate(lines.split('\n')):
+                    if lineno > 6 and cointoss() and line:
+                        data = perturb(line) + [ offset, user_id, path_id, _dtime()]
                         offset += 1
                         res = json.dumps(data)
-                        print res
+                        if print_sent: print res
                         producer.send(os.environ['KAFKA_TOPIC'], res)
     
-                if not continuous:
-                    return {"path_id": path_id, "user_id": user_id}
-
     if continuous: 
        while 1:  produce()
     else:
@@ -108,9 +100,9 @@ def produce_controlled(hdfs):
     
     producer = KafkaProducer(bootstrap_servers='localhost:9092')
     test = [ 
-        [39.984702, 116.318417, 0, 492, 39744.1201851852, "2008-10-23", "02:53:04", 1, "000", "20081023025304", dtime() ], 
-        [39.984683, 116.318450, 0, 492, 39744.1202546296, "2008-10-23", "02:53:10", 2, "000", "20081023025304", dtime() ],
-        [39.984686, 116.318417, 0, 492, 39744.1203125000, "2008-10-23", "02:53:15", 3, "000", "20081023025304", dtime() ]]
+        [39.984702, 116.318417, 0, 492, 39744.1201851852, "2008-10-23", "02:53:04", 1, "000", "20081023025304", _dtime() ], 
+        [39.984683, 116.318450, 0, 492, 39744.1202546296, "2008-10-23", "02:53:10", 2, "000", "20081023025304", _dtime() ],
+        [39.984686, 116.318417, 0, 492, 39744.1203125000, "2008-10-23", "02:53:15", 3, "000", "20081023025304", _dtime() ]]
 
     print "Sending"
     for point in test:
@@ -171,5 +163,4 @@ def main_simple_prod():
 if __name__ == "__main__":
     main_inst_prod() 
     #main_simple_prod() 
-
 
