@@ -33,7 +33,7 @@ def perturb(line):
 
     return [lat, lon, 0, float(arr[3]), arr[4], arr[5], arr[6]]
 
-def produce_untagged(hdfs, print_sent=False):
+def produce_untagged(hdfs, to_stdout=False):
     """
     Produces random user input values. 
     untagged ~ no user or path info on the points
@@ -50,7 +50,7 @@ def produce_untagged(hdfs, print_sent=False):
             for lineno, line in enumerate(lines.split('\n')):
                 if lineno > 6 and cointoss() and line:
                     res = json.dumps(perturb(line))
-                    if print_sent: print res
+                    if to_stdout: print res
                     producer.send(os.environ['KAFKA_TOPIC'], res)
 
 def _dtime():
@@ -60,7 +60,7 @@ def _dtime():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
-def produce_tagged(hdfs, channel=None, continuous=True, print_sent=True):
+def produce_tagged(hdfs, channel=None, continuous=True, to_stdout=True):
     """
     Produces trajectory values for a single user, tagged with path_id and user_id 
     Arguments:
@@ -88,7 +88,7 @@ def produce_tagged(hdfs, channel=None, continuous=True, print_sent=True):
                         data = perturb(line) + [ offset, user_id, path_id, _dtime()]
                         offset += 1
                         res = json.dumps(data)
-                        if print_sent: print res
+                        if to_stdout: print res
                         producer.send(os.environ['KAFKA_TOPIC'], res)
     
     if continuous: 
@@ -132,7 +132,7 @@ def kreceiver(channel):
     #consumer = KafkaConsumer(topic, enable_auto_commit=False, group_id=None)
     #consumer.topics()
     #consumer.seek_to_beginning()
-
+    print "In kreceiver"
     for recvd in KafkaConsumer(topic):
         print recvd
         #resp is of type ConsumerRecord
@@ -150,7 +150,7 @@ def main_inst_prod():
     proc = Process(target=kreceiver, args=(channel, ))
     proc.start()
 
-    produce_tagged(sbite, channel=channel)
+    produce_tagged(sbite, channel=channel, to_stdout=False)
     proc.join()
 
 def main_simple_prod():
@@ -163,4 +163,8 @@ def main_simple_prod():
 if __name__ == "__main__":
     main_inst_prod() 
     #main_simple_prod() 
+
+    #sbite = sbclient('52.42.199.53', 9000, use_trash=False)
+    #sbite = sbclient('ec2-52-42-199-53.us-west-2.compute.amazonaws.com', 9000, use_trash=False)
+    #for u in get_users(sbite): print u
 
