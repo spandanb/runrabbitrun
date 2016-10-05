@@ -1,8 +1,9 @@
 import random
 import uuid
-import os
+import os, pdb, sys
 import datetime
 import csv
+
 
 #Seed locations
 seeds = [
@@ -45,6 +46,13 @@ seeds = [(seeds[i*2], seeds[i*2+1]) for i, s in enumerate(seeds[::2])]
 
 basepath = "/home/ubuntu/Synthetic_Trajectories/"
 epoch = datetime.datetime.utcfromtimestamp(0)
+preamble = [ 
+    ["Geolife trajectory"],
+    ["WGS 84"],
+    ["Altitude is in Feet"],
+    ["Reserved 3"],
+    [0,2,255,'My Track',0,0,2,8421376],
+    ["0"]]
 
 def _user_id():
     return str(random.randint(1000, 10000))
@@ -65,7 +73,7 @@ def _time(seed):
         return datetime.datetime.fromtimestamp(newt).strftime("%H:%M:%S")
 
 def cointoss(odds=0.5):
-    return random.random < odds
+    return random.random() < odds
 
 def get_users():
     """
@@ -82,12 +90,19 @@ def write_traj(user_id, path_id, data):
         os.makedirs(userdir)
         os.makedirs(os.path.join(basepath, user_id, "Trajectory"))
 
-    trajfile = "{}.plt".format(user_id)
+    trajfile = path_id + ".plt"
     trajpath = os.path.join(basepath, user_id, "Trajectory", trajfile)
-
-    with open(trajpath, 'wb') as fptr:
-        writer = csv.writer(fptr)
-        writer.writerows(data)
+    
+    try:
+        with open(trajpath, 'wb') as fptr:
+            writer = csv.writer(fptr)
+            writer.writerows(preamble)
+            writer.writerows(data)
+    except KeyboardInterrupt:
+        #Nuke this file, may be corrupted
+        os.remove(trajpath)
+        print "Exiting"
+        sys.exit(0)
 
 
 def _randwalk(x, y, step=0.00001, n=1000):
@@ -124,12 +139,12 @@ def randwalk():
 
         users = get_users()
         #pick existing
-        if cointoss(odds=0.6) and users:
+        if cointoss(odds=0.85) and users:
             user = random.choice(users)
         else:
             user = _user_id()
             
-        path = _path_id
+        path = _path_id()
             
         seed = random.choice(seeds) 
         traj = _randwalk(seed[0], seed[1])

@@ -35,13 +35,14 @@ def randwalk(x, y, step=0.0001, n=50):
 
     for i in range(n):
         #skewed in one direction so there is an actual walk
-        r = random.randint(-2, 4) 
+        r = random.randint(-1, 5) 
         x += xstep * r
-        r = random.randint(-2, 4) 
+        r = random.randint(-1, 5) 
         y += ystep * r
         posvect.append((x, y))
 
     return posvect
+
 
 if __name__ == "__main__":
     genwalk()
