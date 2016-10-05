@@ -53,7 +53,8 @@ def _speed_gradient(row):
         return (p0[0], p0[1], speed, gradient)
     else:
         #lat, lon, speed, gradient, offset, user_id, path_id, original datetime
-        return (p0[0], p0[1], speed, gradient, p0[7], p0[8], p0[9], p0[10])
+        return [p0[0], p0[1], speed, gradient] + p0[7:] 
+        #return (p0[0], p0[1], speed, gradient, p0[7], p0[8], p0[9], p0[10])
 
 def pairwise_compute(rdd):
     """
@@ -110,7 +111,6 @@ def fetch_and_pipe(rdd):
     Arguments:
         rdd: the computed rdd, i.e. the output from pairwise_compute
     """
-    ew = ElasticWrapper() #See if this can be cached
     try:
         #The tail element
         tail = rdd.zipWithIndex()\
@@ -118,10 +118,11 @@ def fetch_and_pipe(rdd):
                   .map(lambda row: row[0])\
                   .first()
     except ValueError as err:
-        print("ValueError Raised: {}: {}".format(err.args, err.message))
+        if 'RDD is empty' != err.message:
+            print("ValueError Raised: {}: {}".format(err.args, err.message))
         return 
 
-
+    ew = ElasticWrapper() #See if this can be cached
     if tail:
         matching_paths = []
         #Get nearby points
@@ -143,9 +144,9 @@ def fetch_and_pipe(rdd):
         #TODO: remove subset of path where distance > 10m
         results = json.dumps(matching_paths)
         print("Results is {}".format(results))
-
-        producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
-        producer.send(os.environ["KAFKA_TOPIC_RES"], results) 
+        if results:
+            producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
+            producer.send(os.environ["KAFKA_TOPIC_RES"], results) 
 
 def simple_consume():
     #https://github.com/dpkp/kafka-python/issues/601

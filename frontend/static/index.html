@@ -18,42 +18,49 @@
         </div>
 
         <div class="row">
-            <div class="col-lg-6">
-                <div class="input-group space-box">
-                    <span class="input-group-addon">Seed Latitude</span>
-                    <input id="seed-lat" type="text" class="form-control" value="37.4263597">
-                </div>
 
-                <div class="input-group space-box">
-                    <span class="input-group-addon">Seed Longitude</span>
-                    <input id="seed-lon" type="text" class="form-control" value="-122.1432371">
-                </div>
-            </div>
+            <div class="col-lg-6 col-sm-12 col-xs-12">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="input-group space-box">
+                            <span class="input-group-addon">Latitude</span>
+                            <input type="text" class="form-control" placeholder="[Latitude]" id="lat-vals">
+                        </div>
+            
+                        <div class="input-group space-box">
+                            <span class="input-group-addon">Longitude</span>
+                            <input type="text" class="form-control" placeholder="[Longitude]" id="lon-vals">
+                        </div>
+                
+                        <div class="space-box">
+                            <button type="button" class="btn btn-success" id="run-query">Run Compare Query</button>
+                        </div>
+                    </div>
+                </div><!--.row-->
+            </div> <!--.col -->
 
-
-        </div>
-
-
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="input-group space-box">
-                    <span class="input-group-addon">Latitude</span>
-                    <input type="text" class="form-control" placeholder="Latitude" id="lat-vals">
-                </div>
-    
-                <div class="input-group space-box">
-                    <span class="input-group-addon">Longitude</span>
-                    <input type="text" class="form-control" placeholder="Longitude" id="lon-vals">
-                </div>
+            <div class="col-lg-6 col-sm-12 col-xs-12">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="input-group space-box">
+                            <span class="input-group-addon">Seed Latitude</span>
+                            <input id="seed-lat" type="text" class="form-control" value="37.4263597">
+                        </div>
         
-                <div class="space-box">
-                    <button type="button" class="btn btn-primary" id="synth-data">Synthesize Data</button>
-                    <button type="button" class="btn btn-success" id="run-query">Run Compare Query</button>
-                </div>
-            </div>
-        </div>
+                        <div class="input-group space-box">
+                            <span class="input-group-addon">Seed Longitude</span>
+                            <input id="seed-lon" type="text" class="form-control" value="-122.1432371">
+                        </div>
+        
+                        <div class="input-group space-box">
+                            <button type="button" class="btn btn-primary" id="synth-data">Synthesize Data</button>
+                        </div>
+                    </div>
+                </div><!--.row -->
+            </div><!--.col -->
 
-    </div>
+        </div> <!-- .row -->               
+    </div><!-- .container -->
 
 
     <div id="map"></div>
