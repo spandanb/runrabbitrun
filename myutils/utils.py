@@ -17,7 +17,7 @@ def pprint(obj):
     """
     print json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
     
-def get_users(hdfs, limit=-1):
+def get_users(hdfs, limit=-1, root='/Geolife_Trajectories/Data/'):
     """
     Iterates over the users, i.e. the directory 
     object corresponding to each user
@@ -25,7 +25,7 @@ def get_users(hdfs, limit=-1):
         hdfs: hdfs client
         limit: -1 (all), otherwise the max desired value
     """
-    users = hdfs.ls(['/Geolife_Trajectories/Data/'])
+    users = hdfs.ls([root])
 
     for i, u in enumerate(users):
         if i == limit: break
