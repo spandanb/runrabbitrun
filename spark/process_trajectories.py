@@ -138,7 +138,7 @@ def main():
     logger.LogManager.getLogger("akka").setLevel( logger.Level.ERROR )
 
     #iterate over all trajectory files and write to elastic
-    for user in get_users(hdfs):
+    for user in get_users(hdfs, root="/Synthetic_Trajectories/Synthetic_Trajectories"):
         #iterate over trajectories of this user
         for trajectory in get_trajectories(hdfs, user):
             to_elastic(ew, sc, trajectory['path'])
