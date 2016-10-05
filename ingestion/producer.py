@@ -38,7 +38,7 @@ def produce_untagged(hdfs, print_sent=False):
     Produces random user input values. 
     untagged ~ no user or path info on the points
     """
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
 
     for user in get_users(hdfs):
         if cointoss(): continue
@@ -68,7 +68,7 @@ def produce_tagged(hdfs, channel=None, continuous=True, print_sent=True):
         channel: (Queue) to communicate with receiver process
         continuous: keep running
     """
-    producer = KafkaProducer(bootstrap_servers='localhost:9092')
+    producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
 
     def produce(): 
         for user in get_users(hdfs):
