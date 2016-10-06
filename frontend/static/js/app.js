@@ -1,21 +1,45 @@
 $(function(){
 
-    var send_coord = function(lat, lon){
-       $.ajax({
-            url: "/coords",
-            data: {"body": JSON.stringify({"lat": lat, "lon": lon})},
-            method: "POST",
-            success: function(resp){
-                console.log(resp);
-            }
-        })
+    var dataFSM = {
+        //Send the request
+        send_coords: function(data){
+            $.ajax({
+                url: "/coords",
+                data: {"body": JSON.stringify(data), "user_id": user_id},
+                method: "POST",
+                success: function(resp){
+                    console.log(resp);
+                }
+            })
+        },
+
+        _get_response: function(){
+            console.log("Running _get_response")
+            $.ajax({
+                url: "/resp",
+                data: {"user_id": user_id},
+                method: "POST",
+                success: function(resp){
+                    console.log(resp);
+                }
+            })
+        },
+
+        start_loop: function(){
+            this.jobid = setInterval(this._get_response, 2000)
+        },
+
+        stop_loop: function(){
+            clearInterval(this.jobid)
+        }
+
     }
 
-    $("#submit-btn").click(function(e){
-        var lat = $("#lat-input").val();
-        var lon = $("#lon-input").val();
-        //send_coord(lat, lon);
-       drop() 
+    $("#run-query").click(function(e){
+        //Sends request
+        var data = sdata.path
+        dataFSM.send_coords(data)
+        dataFSM.start_loop()
     });
 
 
