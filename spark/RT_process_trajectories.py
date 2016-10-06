@@ -6,6 +6,7 @@ import dateutil.parser as dateparser
 from feiface import feiface
 from elastic_wrapper.elastic_wrapper import ElasticWrapper
 import math
+import hdfs
 try:
     from pyspark import SparkConf, SparkContext
     from pyspark.streaming import StreamingContext
@@ -123,6 +124,8 @@ def fetch_and_pipe(rdd):
         return 
 
     ew = ElasticWrapper() #See if this can be cached
+    hclient = hdfs.InsecureClient('http://{}:50070'.format(os.environ['PUBLIC_DNS']))
+
     if tail:
         matching_paths = []
         #Get nearby points
@@ -142,11 +145,22 @@ def fetch_and_pipe(rdd):
                 matching_paths.append(subpath)
         
         #TODO: remove subset of path where distance > 10m
-        results = json.dumps(matching_paths)
+        user_id = tail[-1]
+        #results = json.dumps({"user_id": user_id,  "matches": matching_paths}) #KAFKA
+        results = json.dumps(matching_paths)  #HDFS
         print("Results is {}".format(results))
-        if results:
-            producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
-            producer.send(os.environ["KAFKA_TOPIC_RES"], results) 
+        
+        #Write to Kafka output stream
+        #TODO: FIX THIS
+        #producer = KafkaProducer(bootstrap_servers=os.environ['KAFKA_BROKERS'])
+        #producer.send(os.environ["KAFKA_TOPIC_RES"], results) 
+        
+        #write to file on hdfs
+        with hclient.write('/results/' + user_id, encoding='utf-8', overwrite=True) as writer:
+            json.dump(results, writer)
+
+
+
 
 def simple_consume():
     #https://github.com/dpkp/kafka-python/issues/601

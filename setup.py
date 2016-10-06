@@ -5,6 +5,6 @@ setup(
         name="walker",
         version="0.1",
         packages = find_packages(),
-        install_requires = ['elasticsearch', 'kafka-python' ]
+        install_requires = ['elasticsearch', 'kafka-python', 'torando', 'flask', 'hdfs', 'snakebite']
 )
 
