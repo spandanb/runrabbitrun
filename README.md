@@ -68,9 +68,9 @@ The System can handle 3000 events/seconds with a ~1 second latency.
 [Back to Table of contents](README.md#table-of-contents)
 
 ### Website 
-runrabbitrun.xyz
+http://runrabbitrun.xyz
 ### Presentation
-bit.do/runrabbitrun
+http://bit.do/runrabbitrun
 ### Video 
 https://youtu.be/RnIgcWHt_yc
 
