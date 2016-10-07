@@ -78,8 +78,8 @@ function nextStep(){
     var last = tail(sdata.path) 
     lat = last[0]
     lon = last[1]
-    var x = sdata.xstep * randint(-1, 5) + lat
-    var y = sdata.ystep * randint(-1, 5) + lon
+    var x = sdata.xstep * randint(2, 6) + lat
+    var y = sdata.ystep * randint(2, 6) + lon
     sdata.path.push(tofmt(x,y))
     return {lat: x, lng: y}
 }
@@ -171,8 +171,8 @@ $("#synth-data").click(function(){
         var seedlat = Number($("#seed-lat").val())
         var seedlon = Number($("#seed-lon").val()) 
 
-        sdata.xstep = 0.0001 * (randbool()? 1: -1)
-        sdata.ystep = 0.0001 * (randbool()? 1: -1)
+        sdata.xstep = 0.00001 * (randbool()? 1: -1)
+        sdata.ystep = 0.00001 * (randbool()? 1: -1)
 
         sdata.path = [tofmt(seedlat, seedlon)];
         sdata.running = true

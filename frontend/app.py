@@ -1,14 +1,14 @@
 import tornado.ioloop
 import tornado.web
 import tornado.httpserver
-import os, json, sys, pdb, threading
+import os, json, sys, pdb
 from kafka import KafkaProducer, KafkaConsumer
 import threading
+import hdfs
 
 class StateManager(object):
     producer = None
-    consumer = None
-    cache = [] 
+    hdfsclient = None
 
     @classmethod
     def set_producer(cls, producer):
@@ -19,27 +19,26 @@ class StateManager(object):
         return cls.producer
 
     @classmethod
-    def set_consumer(cls, consumer):
-        cls.consumer = consumer
+    def set_hdfs(cls, hdfsclient):
+        cls.hdfsclient = hdfsclient
 
     @classmethod
-    def get_consumer(cls):
-        return cls.consumer
+    def get_hdfs(cls):
+        return cls.hdfsclient
 
-
-def simple_consumer():
-    consumer = KafkaConsumer(os.environ['KAFKA_TOPIC_RES'], bootstrap_servers=os.environ['KAFKA_BROKERS'])
-    for msg in consumer:
-        print msg
-
-def update_cache():
-    print "IN UPDATE_CACHE"
-    consumer = KafkaConsumer(os.environ['KAFKA_TOPIC_RES'], bootstrap_servers=os.environ['KAFKA_BROKERS'])
-    StateManager.set_consumer(consumer)
-
-    for msg in consumer:
-        print msg
-        StateManager.cache.append(msg)
+#def simple_consumer():
+#    consumer = KafkaConsumer(os.environ['KAFKA_TOPIC_RES'], bootstrap_servers=os.environ['KAFKA_BROKERS'])
+#    for msg in consumer:
+#        print msg
+#
+#def update_cache():
+#    print "IN UPDATE_CACHE"
+#    consumer = KafkaConsumer(os.environ['KAFKA_TOPIC_RES'], bootstrap_servers=os.environ['KAFKA_BROKERS'])
+#    StateManager.set_consumer(consumer)
+#
+#    for msg in consumer:
+#        print msg
+#        StateManager.cache.append(msg)
 
 class Application(tornado.web.Application):
     def __init__(self):
@@ -74,29 +73,51 @@ class UserInputHandler(tornado.web.RequestHandler):
             StateManager.set_producer(producer)
 
         producer = StateManager.get_producer()
+        #TODO: Send in bulk
         for b in body: producer.send(os.environ['KAFKA_TOPIC'], json.dumps(b)) 
-        
         #producer.send(os.environ['KAFKA_TOPIC'], json.dumps(body))
 
-        print "DONE"
         self.write("200") 
 
 class UserResponseHandler(tornado.web.RequestHandler):
+    def _process_results(self, results):
+        """
+        Processes the results into format required by 
+        high charts
+        """
+        #The matching speeds
+        matches = []
+        for path in results["matches"]:
+            matches.append([])
+            for point in path:
+                matches[-1].append(point['_source']['speed'])
+        #The user's path
+        path = [point[2] for point in results["path"]]
+        return {"matches": matches, "path": path}
+
     def post(self):
         user_id = self.get_argument("user_id")
 
-        print "In UserResponseHandler"
-        print user_id
+        hdfsclient = StateManager.get_hdfs()
+        if not hdfsclient:
+            hdfsclient = hdfs.InsecureClient('http://{}:50070'.format(os.environ['PUBLIC_DNS']))
+            StateManager.set_hdfs(hdfsclient)
 
-        print StateManager.cache 
-        self.write("200") 
-
+        path = "/results/{}".format(user_id)
+        if hdfsclient.status(path, strict=False):
+            with hdfsclient.read(path) as reader:
+                content = reader.read()
+                content = json.loads(json.loads(content))
+                content = self._process_results(content)
+        else:
+            content = {}
+   
+        self.write(content)
 
 def main(port):
     http_server = tornado.httpserver.HTTPServer(Application())
     http_server.listen(port)
     tornado.ioloop.IOLoop.current().start()        
-    threading.Thread(target=update_cache).start()
     
 if __name__ == "__main__":
     port = 8080# sys.argv[1]

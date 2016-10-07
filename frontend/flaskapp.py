@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
 from kafka import KafkaProducer, KafkaConsumer
 import os
-import threading, json
+import threading
+import json
+import hdfs
 
 app = Flask(__name__, static_url_path='/static')
 
@@ -12,6 +14,7 @@ class StateManager(object):
         self.consumer = KafkaConsumer(os.environ['KAFKA_TOPIC_RES'], 
                                       bootstrap_servers=os.environ['KAFKA_BROKERS'])
         self.cache = []
+        self.hdfs = hdfs.InsecureClient('http://{}:50070'.format(os.environ['PUBLIC_DNS']))
 
     def async_consume(self):
         def consume(): 
@@ -36,13 +39,17 @@ def query():
 @app.route("/resp", methods=["POST"])
 def results():
     print "/RESP"
-    print statemanager.cache
-    return jsonify({"response" : 200})
+
+    path = "/results/{}".format(request.values["user_id"])
+    if hclient.status(path, strict=False):
+        with StateManager.hdfs.read(path) as reader:
+            content = reader.read()
+    else:
+        content = None
+
+
+    return jsonify({"response" : content})
     
 
 if __name__ == "__main__":
-    statemanager = StateManager()
-    statemanager.async_consume()
-    
-    #app.run(host="0.0.0.0", debug=True, port=8080)
-    #app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", debug=True, port=8080)
