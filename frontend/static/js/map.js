@@ -78,8 +78,8 @@ function nextStep(){
     var last = tail(sdata.path) 
     lat = last[0]
     lon = last[1]
-    var x = sdata.xstep * randint(2, 6) + lat
-    var y = sdata.ystep * randint(2, 6) + lon
+    var x = sdata.xstep * randint(2, 10) + lat
+    var y = sdata.ystep * randint(2, 10) + lon
     sdata.path.push(tofmt(x,y))
     return {lat: x, lng: y}
 }
