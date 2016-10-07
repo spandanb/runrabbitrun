@@ -53,14 +53,16 @@ def _speed_gradient(row):
         #lat, lon, speed, gradient
         return (p0[0], p0[1], speed, gradient)
     else:
-        #lat, lon, speed, gradient, offset, user_id, path_id, original datetime
-        return [p0[0], p0[1], speed, gradient] + p0[7:] 
+               #lat,  lon,    speed, gradient, time   
+        return [p0[0], p0[1], speed, gradient, p0[6]] + p0[7:] 
+        #        lat, lon, speed, gradient, offset, user_id, path_id, original datetime
         #return (p0[0], p0[1], speed, gradient, p0[7], p0[8], p0[9], p0[10])
 
 def pairwise_compute(rdd):
     """
     Performs speed, gradient computation.
     Juxtaposes each of the rows of the rdd.
+    Returns the computed array.
     """
     #row -> (row, idx)
     rdd = rdd.zipWithIndex()
@@ -147,7 +149,7 @@ def fetch_and_pipe(rdd):
         #TODO: remove subset of path where distance > 10m
         user_id = tail[-1]
         #results = json.dumps({"user_id": user_id,  "matches": matching_paths}) #KAFKA
-        results = json.dumps(matching_paths)  #HDFS
+        results = json.dumps({"path": rdd.collect(), "matches": matching_paths})  #HDFS
         print("Results is {}".format(results))
         
         #Write to Kafka output stream

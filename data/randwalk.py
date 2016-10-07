@@ -3,6 +3,7 @@ import uuid
 import os, pdb, sys
 import datetime
 import csv
+import speed_test
 
 
 #Seed locations
@@ -69,7 +70,7 @@ def _time(seed):
     else:
         oldt = datetime.datetime.strptime(seed, "%H:%M:%S")
         totsecs = (oldt - epoch).total_seconds()
-        newt = random.randint(2, 7) + totsecs
+        newt = random.randint(1, 3) + totsecs
         return datetime.datetime.fromtimestamp(newt).strftime("%H:%M:%S")
 
 def cointoss(odds=0.5):
@@ -145,7 +146,7 @@ def randwalk():
             user = _user_id()
             
         path = _path_id()
-            
+        
         seed = random.choice(seeds) 
         traj = _randwalk(seed[0], seed[1])
 
@@ -153,6 +154,27 @@ def randwalk():
 
         pathcount += 1
 
+def insight_walk():
+    """
+    Walks around insight office
+    """
+    pathcount = 0
+    while pathcount < 10:
+
+        user = "insight"
+            
+        path = _path_id()
+        insight = [37.4263597, -122.1432371]    
+        
+        traj = _randwalk(insight[0], insight[1])
+
+        write_traj(user, path, traj)
+
+        #for i, t in enumerate(traj[:-1]):
+        #    print "Speed is {} km/h".format(speed_test.speed(t, traj[i+1]))
+
+        pathcount += 1
+
 
 if __name__ == "__main__":
-    randwalk()    
+    insight_walk()    
