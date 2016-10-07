@@ -120,7 +120,7 @@ def main(port):
     tornado.ioloop.IOLoop.current().start()        
     
 if __name__ == "__main__":
-    port = 8080# sys.argv[1]
+    port = sys.argv[1]
     main(port)
 
 
